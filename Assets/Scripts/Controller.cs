@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 public class Controller : MonoBehaviour
 {
-    //GameObjects
     public GameObject board;
     public GameObject[] cops = new GameObject[2];
     public GameObject robber;
@@ -13,7 +12,6 @@ public class Controller : MonoBehaviour
     public Text finalMessage;
     public Button playAgainButton;
 
-    //Otras variables
     Tile[] tiles = new Tile[Constants.NumTiles];
     private int roundCount = 0;
     private int state;
@@ -32,7 +30,6 @@ public class Controller : MonoBehaviour
 
     private Tile FindFarthestTileFromCops(int robberPosition)
     {
-        // Realizamos BFS desde la posición del ladrón
         Queue<Tile> queue = new Queue<Tile>();
         bool[] visited = new bool[Constants.NumTiles];
         int[] distancesFromRobber = new int[Constants.NumTiles];
@@ -41,7 +38,6 @@ public class Controller : MonoBehaviour
         visited[robberPosition] = true;
         distancesFromRobber[robberPosition] = 0;
 
-        // Primero calculamos todas las distancias desde el ladrón
         while (queue.Count > 0)
         {
             Tile current = queue.Dequeue();
@@ -57,7 +53,6 @@ public class Controller : MonoBehaviour
             }
         }
 
-        // Ahora calculamos las distancias mínimas a los policías para cada casilla
         int[] minDistancesToCops = new int[Constants.NumTiles];
         for (int i = 0; i < Constants.NumTiles; i++)
         {
@@ -92,20 +87,17 @@ public class Controller : MonoBehaviour
             }
         }
 
-        // Buscamos la casilla alcanzable que maximice la distancia a los policías
         Tile bestTile = null;
         int maxDistance = -1;
         int maxRobberDistance = -1;
 
         ResetTiles();
-        FindSelectableTiles(false); // Encuentra casillas alcanzables por el ladrón
+        FindSelectableTiles(false);
 
         for (int i = 0; i < Constants.NumTiles; i++)
         {
             if (tiles[i].selectable && i != robberPosition)
             {
-                // Priorizamos casillas más lejanas de los policías
-                // En caso de empate, preferimos las que están más lejos del ladrón (para no moverse en círculos)
                 if (minDistancesToCops[i] > maxDistance ||
                     (minDistancesToCops[i] == maxDistance && distancesFromRobber[i] > maxRobberDistance))
                 {
@@ -116,10 +108,9 @@ public class Controller : MonoBehaviour
             }
         }
 
-        return bestTile ?? tiles[robberPosition]; // Si no encuentra ninguna, se queda donde está
+        return bestTile ?? tiles[robberPosition];
     }
 
-    //Rellenamos el array de casillas y posicionamos las fichas
     void InitTiles()
     {
         for (int fil = 0; fil < Constants.TilesPerRow; fil++)
@@ -140,7 +131,6 @@ public class Controller : MonoBehaviour
 
     public void InitAdjacencyLists()
     {
-        // Inicializar matriz a 0's
         int[,] matriu = new int[Constants.NumTiles, Constants.NumTiles];
         for (int i = 0; i < Constants.NumTiles; i++)
         {
@@ -150,7 +140,6 @@ public class Controller : MonoBehaviour
             }
         }
 
-        // Rellenar con 1's las casillas adyacentes
         for (int i = 0; i < Constants.NumTiles; i++)
         {
             int row = i / Constants.TilesPerRow;
@@ -178,7 +167,6 @@ public class Controller : MonoBehaviour
             }
         }
 
-        // Rellenar la lista "adjacency" de cada casilla
         for (int i = 0; i < Constants.NumTiles; i++)
         {
             tiles[i].adjacency.Clear();
@@ -192,7 +180,6 @@ public class Controller : MonoBehaviour
         }
     }
 
-    //Reseteamos cada casilla: color, padre, distancia y visitada
     public void ResetTiles()
     {        
         foreach (Tile tile in tiles)
@@ -226,7 +213,6 @@ public class Controller : MonoBehaviour
         switch (state)
         {            
             case Constants.CopSelected:
-                //Si es una casilla roja, nos movemos
                 if (tiles[clickedTile].selectable)
                 {                  
                     cops[clickedCop].GetComponent<CopMove>().MoveToTile(tiles[clickedTile]);
@@ -277,12 +263,10 @@ public class Controller : MonoBehaviour
 
         if (smartRobberAI)
         {
-            // Usar IA inteligente
             targetTile = FindFarthestTileFromCops(clickedTile);
         }
         else
         {
-            // Comportamiento original aleatorio
             List<Tile> selectableTiles = new List<Tile>();
             for (int i = 0; i < Constants.NumTiles; i++)
             {
@@ -348,13 +332,10 @@ public class Controller : MonoBehaviour
         else
             indexcurrentTile = robber.GetComponent<RobberMove>().currentTile;
 
-        // La ponemos rosa porque acabamos de hacer un reset
         tiles[indexcurrentTile].current = true;
 
-        // Cola para el BFS
         Queue<Tile> nodes = new Queue<Tile>();
 
-        // Inicializar BFS
         tiles[indexcurrentTile].visited = true;
         tiles[indexcurrentTile].distance = 0;
         nodes.Enqueue(tiles[indexcurrentTile]);
@@ -363,16 +344,13 @@ public class Controller : MonoBehaviour
         {
             Tile current = nodes.Dequeue();
 
-            // Solo consideramos casillas a distancia máxima de 2
             if (current.distance >= Constants.Distance)
                 continue;
 
-            // Examinar vecinos
             foreach (int neighborIndex in current.adjacency)
             {
                 Tile neighbor = tiles[neighborIndex];
 
-                // Si no ha sido visitado y no es la casilla actual de otro policía
                 if (!neighbor.visited &&
                     (neighborIndex != cops[(clickedCop + 1) % 2].GetComponent<CopMove>().currentTile || !cop))
                 {
@@ -381,7 +359,6 @@ public class Controller : MonoBehaviour
                     neighbor.parent = current;
                     nodes.Enqueue(neighbor);
 
-                    // Marcamos como seleccionable si está a distancia 1 o 2
                     neighbor.selectable = true;
                 }
             }
